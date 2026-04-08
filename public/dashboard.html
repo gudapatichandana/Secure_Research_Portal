@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Dashboard - Secure Research Portal</title>
+  <link rel="stylesheet" href="css/style.css?v=2.2">
+  <script src="https://cdn.jsdelivr.net/npm/node-forge@1.3.1/dist/forge.min.js"></script>
+
+
+</head>
+
+<body class="fade-in">
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="main-dashboard-header mb-4">
+      <h2 id="welcome"></h2>
+      <a href="#" id="keyStatus" class="d-none" onclick="setupKeys()" style="margin-left: auto;">🔐 Setup Inbox</a>
+    </div>
+
+    <!-- Student Profile Header (shown only for students) -->
+    <div id="studentProfileCard" class="student-profile-header d-none">
+      <img src="student_avatar.png" alt="Student Avatar" class="student-avatar"
+        onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%234834d4%22/%3E%3Ctext x=%2250%22 y=%2260%22 font-size=%2240%22 fill=%22white%22 text-anchor=%22middle%22%3E👨‍🎓%3C/text%3E%3C/svg%3E'">
+      <div class="student-profile-info">
+        <h3 id="studentProfileName">Welcome Back!</h3>
+        <p>📚 Research Scholar | 🎓 Academic Portal</p>
+        <div class="student-stats" id="studentStats">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total Papers</div>
+          </div>
+          <div class="stat-card stat-accepted">
+            <div class="stat-value" id="statAccepted">0</div>
+            <div class="stat-label">Accepted</div>
+          </div>
+          <div class="stat-card stat-pending">
+            <div class="stat-value" id="statPending">0</div>
+            <div class="stat-label">Pending</div>
+          </div>
+          <div class="stat-card stat-rejected">
+            <div class="stat-value" id="statRejected">0</div>
+            <div class="stat-label">Rejected</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student Navigation Panel (shown only for students) -->
+    <div id="studentNavCard" class="student-nav-panel d-none" style="margin-bottom: 25px;">
+      <div class="filter-controls">
+        <button class="btn-home" onclick="resetFilters()">
+          🏠 Home
+        </button>
+
+        <input type="text" id="searchPapers" class="search-bar-premium"
+          placeholder="Search papers by title, content, or feedback..." oninput="applyFilters()">
+
+        <select id="filterStatus" class="filter-select" onchange="applyFilters()">
+          <option value="all">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+
+        <select id="filterDate" class="filter-select" onchange="applyFilters()">
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="week">Last 7 Days</option>
+          <option value="month">Last 30 Days</option>
+        </select>
+
+        <select id="sortPapers" class="filter-select" onchange="applyFilters()">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="title-asc">Title (A-Z)</option>
+          <option value="title-desc">Title (Z-A)</option>
+          <option value="status">By Status</option>
+        </select>
+      </div>
+      <div class="active-filters" id="activeFilters"></div>
+    </div>
+
+
+
+    <!-- REVIEW MODAL -->
+    <div id="reviewModal" class="glass-card mb-4 d-none"
+      style="border: 1px solid var(--primary); position:fixed; top:20%; left:50%; transform:translateX(-50%); z-index:1000; width:90%; max-width:500px;">
+      <h4 id="reviewModalTitle" class="text-primary mb-3">Grade Paper</h4>
+
+      <label>Score (1-10)</label>
+      <input type="number" id="reviewScore" class="input-control mb-3" min="1" max="10" value="8">
+
+      <label>Feedback</label>
+      <textarea id="reviewComment" class="input-control mb-3" rows="3"
+        placeholder="Constructive feedback..."></textarea>
+
+      <div class="d-flex justify-between" style="gap:10px;">
+        <button class="btn btn-danger" onclick="submitReview('Rejected')">Reject</button>
+        <button class="btn btn-success" onclick="submitReview('Accepted')">Accept</button>
+      </div>
+      <button class="btn btn-outline mt-2"
+        onclick="document.getElementById('reviewModal').classList.add('d-none')">Cancel</button>
+    </div>
+
+    <!-- KEY SETUP MODAL -->
+    <div id="keySetup" class="glass-card mb-4 d-none"
+      style="border: 2px solid var(--accent); position:fixed; top:20%; left:50%; transform:translateX(-50%); z-index:1001; width:90%; max-width:500px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+      <h3 id="keySetupTitle" class="text-accent mb-3">🛡️ Secure Inbox Setup</h3>
+      <div id="keySetupContent" class="mb-4">
+        <p class="text-muted">Generate and save your cryptographic keys to unlock private messages from students.</p>
+      </div>
+      <div id="keySetupActions" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- Dynamic Buttons will be injected here -->
+      </div>
+      <button class="btn btn-outline mt-3" style="width: 100%;"
+        onclick="document.getElementById('keySetup').classList.add('d-none')">Cancel</button>
+    </div>
+
+    <!-- ================= STUDENT PANEL ================= -->
+    <div id="student" class="d-none">
+
+      <!-- Upload Section -->
+      <div class="glass-card mb-4" style="padding: 40px;">
+        <h4 class="text-accent mb-4" style="font-size: 1.8rem;">📝 Upload Research Paper</h4>
+        <div class="form-group"><label style="font-size: 1.15rem; color: var(--primary);">Paper Title</label><input
+            id="title" class="input-control" style="font-size: 1.1rem; padding: 18px 24px;"
+            placeholder="Enter paper title"></div>
+        <div class="form-group"><label style="font-size: 1.15rem; color: var(--primary);">Description (Public
+            Abstract)</label><textarea id="content" class="input-control" style="font-size: 1.1rem; padding: 18px 24px;"
+            rows="2" placeholder="Public abstract..."></textarea></div>
+
+        <div class="form-group"><label class="text-accent" style="font-size: 1.15rem;">🔒 Secure Message (Admin
+            Only)</label><textarea id="secureMsg" class="input-control" style="font-size: 1.1rem; padding: 18px 24px;"
+            rows="3" placeholder="This message will be encrypted for Admin..."></textarea></div>
+
+        <div class="form-group"><label style="font-size: 1.15rem; color: var(--primary);">Research Paper File
+            (PDF/Doc)</label><input type="file" id="paperFile" class="input-control"
+            style="font-size: 1.1rem; padding: 15px 24px;"></div>
+        <button class="btn btn-success" style="font-size: 1.2rem; padding: 20px;" onclick="uploadPaper()">Upload
+          Securely</button>
+      </div>
+
+      <!-- Papers Display -->
+      <div class="mb-4 text-center">
+        <button class="btn btn-primary" style="width: auto; padding: 15px 40px; font-weight: 800; border-radius: 16px;"
+          onclick="toggleMyPapers()">📄 View My Papers</button>
+      </div>
+      <div id="myPapers" class="dashboard-grid"></div>
+    </div>
+
+    <!-- Reviewer Profile Header (shown only for reviewers) -->
+    <div id="reviewerProfileCard" class="student-profile-header d-none"
+      style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(0, 184, 148, 0.05) 100%); border-color: rgba(0, 184, 148, 0.2); box-shadow: 0 15px 35px rgba(0, 184, 148, 0.1);">
+      <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=reviewer" alt="Reviewer Avatar" class="student-avatar"
+        id="reviewerAvatar"
+        style="background: linear-gradient(white, white) padding-box, linear-gradient(135deg, var(--accent), #55efc4) border-box; box-shadow: 0 8px 20px rgba(0, 184, 148, 0.3);">
+      <div class="student-profile-info">
+        <h3 id="reviewerProfileName"
+          style="background: linear-gradient(135deg, var(--accent), #1dd1a1); -webkit-background-clip: text; background-clip: text;">
+          Reviewer Panel</h3>
+        <p>🔍 Professional Reviewer | 📝 Editorial Board</p>
+        <div class="student-stats" id="reviewerStats">
+          <div class="stat-card" style="border-bottom-color: var(--accent);">
+            <div class="stat-value" id="statReviewTotal"
+              style="background: linear-gradient(135deg, var(--accent), #1dd1a1); -webkit-background-clip: text; background-clip: text;">
+              0</div>
+            <div class="stat-label">Total Submissions</div>
+          </div>
+          <div class="stat-card stat-accepted" style="border-bottom-color: #6366f1;">
+            <div class="stat-value" id="statReviewDone"
+              style="background: linear-gradient(135deg, #6366f1, #818cf8); -webkit-background-clip: text; background-clip: text;">
+              0</div>
+            <div class="stat-label">Reviews Completed</div>
+          </div>
+          <div class="stat-card stat-pending" style="border-bottom-color: #f59e0b;">
+            <div class="stat-value" id="statReviewPending"
+              style="background: linear-gradient(135deg, #f59e0b, #fbbf24); -webkit-background-clip: text; background-clip: text;">
+              0</div>
+            <div class="stat-label">Awaiting Your Review</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviewer Navigation Panel (shown only for reviewers) -->
+    <div id="reviewerNavCard" class="student-nav-panel d-none"
+      style="margin-bottom: 25px; border-left-color: var(--accent);">
+      <div class="filter-controls">
+        <button class="btn-home" onclick="resetReviewerFilters()"
+          style="background: linear-gradient(135deg, var(--accent), #1dd1a1) !important; box-shadow: 0 8px 20px rgba(0, 184, 148, 0.3);">
+          🏠 Review Home
+        </button>
+
+        <input type="text" id="searchReviewerPapers" class="search-bar-premium"
+          placeholder="Search by title, owner, or abstract..." oninput="applyReviewerFilters()">
+
+        <select id="filterReviewerStatus" class="filter-select" onchange="applyReviewerFilters()">
+          <option value="all">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+
+        <select id="sortReviewerPapers" class="filter-select" onchange="applyReviewerFilters()">
+          <option value="newest">Newest First</option>
+          <option value="title-asc">Title (A-Z)</option>
+        </select>
+      </div>
+      <div class="active-filters" id="activeReviewerFilters"></div>
+    </div>
+
+    <!-- ================= REVIEWER PANEL ================= -->
+    <div id="reviewer" class="d-none" style="width: 100% !important;">
+      <div class="mb-4 text-center">
+        <button class="btn btn-primary"
+          style="width: auto; padding: 15px 40px; font-weight: 800; border-radius: 16px; background: linear-gradient(135deg, var(--accent), #1dd1a1) !important; border: none; box-shadow: 0 8px 20px rgba(0, 184, 148, 0.3);"
+          onclick="viewReviewerPapers()">🔍 Review Papers</button>
+      </div>
+      <div id="reviewer-papers-grid" class="dashboard-grid"
+        style="width: 100% !important; max-width: 1200px !important;">
+      </div>
+    </div>
+
+    <!-- Admin Profile Header (shown only for admin) -->
+    <div id="adminProfileCard" class="student-profile-header d-none"
+      style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(236, 72, 153, 0.05) 100%); border-color: rgba(236, 72, 153, 0.2); box-shadow: 0 15px 35px rgba(236, 72, 153, 0.1);">
+      <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=admin" alt="Admin Avatar" class="student-avatar"
+        id="adminAvatar"
+        style="background: linear-gradient(white, white) padding-box, linear-gradient(135deg, #ec4899, #f472b6) border-box; box-shadow: 0 8px 20px rgba(236, 72, 153, 0.3);">
+      <div class="student-profile-info">
+        <h3 id="adminProfileName"
+          style="background: linear-gradient(135deg, #ec4899, #f472b6); -webkit-background-clip: text; background-clip: text;">
+          Administrative Control Panel</h3>
+        <p>👑 System Administrator | 🔐 Security Oversight</p>
+        <div class="student-stats" id="adminStats">
+          <div class="stat-card" style="border-bottom-color: #ec4899;">
+            <div class="stat-value" id="statAdminTotal"
+              style="background: linear-gradient(135deg, #ec4899, #f472b6); -webkit-background-clip: text; background-clip: text;">
+              0</div>
+            <div class="stat-label">Total Submissions</div>
+          </div>
+          <div class="stat-card stat-accepted" style="border-bottom-color: #10b981;">
+            <div class="stat-value" id="statAdminAccepted"
+              style="background: linear-gradient(135deg, #10b981, #34d399); -webkit-background-clip: text; background-clip: text;">
+              0</div>
+            <div class="stat-label">Accepted</div>
+          </div>
+          <div class="stat-card stat-pending" style="border-bottom-color: #f59e0b;">
+            <div class="stat-value" id="statAdminPending"
+              style="background: linear-gradient(135deg, #f59e0b, #fbbf24); -webkit-background-clip: text; background-clip: text;">
+              0</div>
+            <div class="stat-label">Pending Review</div>
+          </div>
+          <div class="stat-card stat-rejected" style="border-bottom-color: #ef4444;">
+            <div class="stat-value" id="statAdminRejected"
+              style="background: linear-gradient(135deg, #ef4444, #f87171); -webkit-background-clip: text; background-clip: text;">
+              0</div>
+            <div class="stat-label">Rejected</div>
+          </div>
+          <div class="stat-card" style="border-bottom-color: #6b7280;">
+            <div class="stat-value" id="statAdminDeleted"
+              style="background: linear-gradient(135deg, #6b7280, #9ca3af); -webkit-background-clip: text; background-clip: text;">
+              0</div>
+            <div class="stat-label">Deleted</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Navigation Panel (shown only for admin) -->
+    <div id="adminNavCard" class="student-nav-panel d-none" style="margin-bottom: 25px; border-left-color: #ec4899;">
+      <div class="filter-controls">
+        <button class="btn-home" onclick="resetAdminFilters()"
+          style="background: linear-gradient(135deg, #ec4899, #f472b6) !important; box-shadow: 0 8px 20px rgba(236, 72, 153, 0.3);">
+          🏠 Admin Home
+        </button>
+
+        <input type="text" id="searchAdminPapers" class="search-bar-premium"
+          placeholder="Search by title, owner, or abstract..." oninput="applyAdminFilters()">
+
+        <select id="filterAdminStatus" class="filter-select" onchange="applyAdminFilters()">
+          <option value="all">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+
+        <select id="sortAdminPapers" class="filter-select" onchange="applyAdminFilters()">
+          <option value="newest">Newest First</option>
+          <option value="title-asc">Title (A-Z)</option>
+        </select>
+      </div>
+      <div class="active-filters" id="activeAdminFilters"></div>
+    </div>
+
+    <!-- ================= ADMIN PANEL ================= -->
+    <div id="admin" class="d-none">
+      <div class="glass-card mb-4 text-center" style="padding: 30px;">
+        <h4 class="text-accent mb-3">Administrative Control Panel</h4>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+          <button class="btn btn-primary" onclick="viewAdminPapers()">Review Papers</button>
+          <button class="btn"
+            style="background: linear-gradient(135deg, #6b7280, #9ca3af); color: white; padding: 12px 30px; font-weight: 800;"
+            onclick="viewBin()">🗑️ Bin</button>
+        </div>
+      </div>
+      <div id="adminPapers" class="dashboard-grid"></div>
+      <div id="binPapers" class="dashboard-grid" style="display: none;"></div>
+    </div>
+
+    <!-- PAGE FOOTER / LOGOUT -->
+    <div class="mt-5 mb-5 text-center">
+      <button class="btn-logout" onclick="logout()">Logout Securely</button>
+      <p class="text-muted mt-3" style="font-size: 0.9rem;">Secure Research Portal &copy; 2026</p>
+    </div>
+
+  </div>
+
+  <script>
+    /* ================= PREVENT BACK NAVIGATION ================= */
+    (function () {
+      window.history.forward();
+      function noBack() { window.history.forward(); }
+      window.onload = noBack;
+      window.onpageshow = function (evt) { if (evt.persisted) noBack(); };
+    })();
+
+    /* ================= SESSION ================= */
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    const username = localStorage.getItem("username");
+
+    if (!token || !role || !username) {
+      location.replace("login.html");
+    }
+
+    document.getElementById("welcome").innerText = `Welcome ${username} (${role})`;
+    document.getElementById(role).classList.remove("d-none");
+
+    // Show student profile and nav card if user is a student
+    if (role === 'student') {
+      document.getElementById('studentProfileCard').classList.remove('d-none');
+      document.getElementById('studentNavCard').classList.remove('d-none');
+      loadMyPapers(); // Load stats immediately
+    }
+
+    if (role === 'reviewer') {
+      document.getElementById('reviewerProfileCard').classList.remove('d-none');
+      document.getElementById('reviewerNavCard').classList.remove('d-none');
+      updateReviewerDashboard(); // Load reviewer stats
+    }
+
+    if (role === 'admin') {
+      document.getElementById("keyStatus").classList.remove("d-none");
+      document.getElementById('adminProfileCard').classList.remove('d-none');
+      document.getElementById('adminNavCard').classList.remove('d-none');
+      setTimeout(() => checkKeys(), 100); // Ensure checkKeys runs after role is set
+      updateAdminDashboard(); // Load admin stats
+      viewAdminPapers();
+    }
+
+    // Dashboard starts with all panels closed (manual toggle)
+    function logout() {
+      localStorage.clear();
+      location.replace("login.html");
+    }
+
+    /* ================= CRYPTO OPS ================= */
+    async function checkKeys() {
+      if (typeof role === 'undefined' || role !== 'admin') return;
+      // Check if Admin has a Public Key on the server
+      try {
+        const res = await fetch("/auth/admin-key");
+        const btn = document.getElementById("keyStatus");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.publicKey) {
+            btn.innerText = "✅ Keys Active";
+            btn.style.color = "#1dd1a1";
+            btn.setAttribute('data-active', 'true');
+            return;
+          }
+        }
+        btn.innerText = "🔐 Setup Inbox";
+        btn.style.color = "#fff";
+        btn.setAttribute('data-active', 'false');
+      } catch (e) { console.error(e); }
+    }
+
+    function setupKeys() {
+      // Only admins can setup keys
+      if (role !== 'admin') {
+        alert("⚠️ Access Denied: This feature is only available to administrators.");
+        return;
+      }
+
+      const modal = document.getElementById("keySetup");
+      const title = document.getElementById("keySetupTitle");
+      const content = document.getElementById("keySetupContent");
+      const actions = document.getElementById("keySetupActions");
+      const btn = document.getElementById("keyStatus");
+      const isActive = btn.getAttribute('data-active') === 'true';
+
+      modal.classList.remove("d-none");
+      actions.innerHTML = "";
+
+      if (isActive) {
+        title.innerText = "✅ Keys Already Active";
+        content.innerHTML = `<p class="text-muted">You have an active public key on the server. If you have lost your <b>.pem certificate</b>, you must generate a new one.</p>
+                             <div style="background: rgba(29, 209, 161, 0.1); padding: 15px; border-radius: 12px; border: 1px solid #1dd1a1; color: #10ac84; font-weight: 600; text-align: center; margin-bottom: 20px;">
+                               🛡️ Your Inbox is Secure
+                             </div>`;
+        actions.innerHTML = `
+          <button class="btn btn-accent" style="width: 100%; padding: 15px; font-weight: 800;" onclick="generateKeyPair()">➕ Generate Another Certificate</button>
+        `;
+      } else {
+        title.innerText = "🔐 Setup Secure Inbox";
+        content.innerHTML = `<p class="text-muted">Generate your 2048-bit RSA keys to start receiving encrypted messages from students.</p>`;
+        actions.innerHTML = `
+          <button class="btn btn-accent" style="width: 100%; padding: 15px; font-weight: 800;" onclick="generateKeyPair()">🔑 Generate & Save Keys</button>
+        `;
+      }
+    }
+
+    async function generateKeyPair() {
+      try {
+        const btn = event.target;
+        btn.innerText = "⏳ Generating Keys... (Wait)";
+        btn.disabled = true;
+
+        setTimeout(async () => {
+          const pair = forge.pki.rsa.generateKeyPair(2048);
+          const pubPem = forge.pki.publicKeyToPem(pair.publicKey);
+          const privPem = forge.pki.privateKeyToPem(pair.privateKey);
+
+          // Generate fingerprint for identification
+          const md = forge.md.sha256.create();
+          md.update(pubPem);
+          const fingerprint = md.digest().toHex().substring(0, 16);
+          console.log("🔑 KEY GENERATED - Fingerprint:", fingerprint);
+
+          // 1. Save Public Key to Server
+          await fetch("/auth/save-public-key", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+            body: JSON.stringify({ publicKey: pubPem })
+          });
+
+          // 2. Download Private Key as Certificate
+          const blob = new Blob([privPem], { type: "text/plain" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `admin_certificate_${username}_${fingerprint}.pem`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+
+          btn.innerText = "🔑 Generate & Save Keys";
+          btn.disabled = false;
+          document.getElementById("keySetup").classList.add("d-none");
+          alert(`Success! Your Secret Certificate has been downloaded.\n\nKey Fingerprint: ${fingerprint}\n\nThis fingerprint identifies which messages this certificate can unlock. KEEP IT SAFE!`);
+          checkKeys();
+        }, 100);
+      } catch (e) { alert("Error: " + e.message); }
+    }
+
+    function decryptMessage(btn, id, encMsg, encKeyHex) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pem';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.readAsText(file, 'UTF-8');
+        reader.onload = readerEvent => {
+          try {
+            const privPem = readerEvent.target.result;
+            console.log("🔓 ADMIN DECRYPTING - Certificate loaded:", privPem.substring(0, 50) + "...");
+            const privKey = forge.pki.privateKeyFromPem(privPem);
+            const encBytes = forge.util.hexToBytes(encKeyHex);
+            console.log("🔓 Encrypted key bytes length:", encBytes.length);
+
+            // Decrypt AES Key
+            let decryptedKey;
+            try {
+              decryptedKey = privKey.decrypt(encBytes, 'RSA-OAEP');
+              console.log("✅ RSA Decryption SUCCESS - AES key decrypted");
+            } catch (err) {
+              console.error("❌ RSA Decryption FAILED:", err);
+              throw new Error("RSA Decryption failed. This certificate might not be the correct match for this message.");
+            }
+
+            // Decrypt Message
+            const encryptedBytes = forge.util.hexToBytes(encMsg);
+            console.log("🔓 Encrypted message bytes length:", encryptedBytes.length);
+            const decipher = forge.cipher.createDecipher('AES-CBC', decryptedKey);
+            const iv = forge.util.createBuffer().fillWithByte(0, 16).getBytes();
+            decipher.start({ iv: iv });
+            decipher.update(forge.util.createBuffer(encryptedBytes));
+            const result = decipher.finish();
+
+            if (result) {
+              let plain = "";
+              try {
+                // Safer UTF-8 decoding
+                plain = forge.util.decodeUtf8(decipher.output.getBytes());
+                console.log("✅ Message DECRYPTED:", plain);
+              } catch (err) {
+                console.error("❌ UTF-8 Decoding FAILED:", err);
+                throw new Error("Encoding error. The message was decrypted but could not be read as text. Are you using the correct certificate?");
+              }
+
+              const msgDiv = document.getElementById(`msg-${id}`);
+              msgDiv.innerText = plain;
+              msgDiv.style.color = "#00b894";
+              msgDiv.style.fontStyle = "normal";
+              btn.style.display = "none";
+            } else {
+              console.error("❌ AES Finish FAILED");
+              throw new Error("AES Decryption failed. Invalid encryption state.");
+            }
+          } catch (err) {
+            alert("⚠️ Unlock Failed: " + err.message);
+            console.error("DECRYPT ERROR:", err);
+          }
+        }
+      }
+      input.click();
+    }
+
+    /* ================= STUDENT ================= */
+    async function uploadPaper() {
+      const titleVal = document.getElementById("title").value;
+      const contentVal = document.getElementById("content").value;
+      const secureMsgVal = document.getElementById("secureMsg").value;
+
+      let encryptedMessage = "";
+      let encryptedSymKey = "";
+
+      try {
+        // Try to fetch Admin's Public Key for E2EE (with cache busting)
+        const timestamp = Date.now();
+        const keyRes = await fetch(`/auth/admin-key?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        if (keyRes.ok && secureMsgVal) {
+          const { publicKey: pubPem } = await keyRes.json();
+
+          // Generate fingerprint for identification
+          const md = forge.md.sha256.create();
+          md.update(pubPem);
+          const fingerprint = md.digest().toHex().substring(0, 16);
+
+          console.log("📤 STUDENT ENCRYPTING - Key Fingerprint:", fingerprint);
+          console.log("📤 Public Key Preview:", pubPem.substring(0, 50) + "...");
+          const pubKey = forge.pki.publicKeyFromPem(pubPem);
+
+          // Generate random AES key
+          const symKey = forge.random.getBytesSync(16);
+          const iv = forge.util.createBuffer().fillWithByte(0, 16).getBytes();
+
+          // Encrypt Message with AES
+          const cipher = forge.cipher.createCipher('AES-CBC', symKey);
+          cipher.start({ iv: iv });
+          cipher.update(forge.util.createBuffer(secureMsgVal));
+          cipher.finish();
+          encryptedMessage = forge.util.bytesToHex(cipher.output.getBytes());
+
+          // Encrypt AES Key with RSA
+          encryptedSymKey = forge.util.bytesToHex(pubKey.encrypt(symKey, 'RSA-OAEP'));
+          console.log("📤 ENCRYPTED - Message length:", encryptedMessage.length, "| Key length:", encryptedSymKey.length);
+          console.log("✅ Message encrypted for fingerprint:", fingerprint);
+        }
+      } catch (e) {
+        console.error("❌ E2EE FAILED:", e);
+        console.log("E2EE skipped or failed:", e.message);
+      }
+
+      const formData = new FormData();
+      formData.append("title", titleVal);
+      formData.append("content", contentVal);
+      if (encryptedMessage) {
+        formData.append("encryptedMessage", encryptedMessage);
+        formData.append("encryptedSymKey", encryptedSymKey);
+      } else {
+        formData.append("secureMessage", secureMsgVal);
+      }
+
+      const paperFile = document.getElementById("paperFile").files[0];
+      if (paperFile) formData.append("paperFile", paperFile);
+
+      const res = await fetch("/paper/upload", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token },
+        body: formData
+      });
+
+      const data = await res.json();
+      alert(data.message || "Uploaded");
+      document.getElementById("title").value = "";
+      document.getElementById("content").value = "";
+      document.getElementById("secureMsg").value = "";
+      document.getElementById("paperFile").value = "";
+    }
+
+    /* ================= STUDENT - ENHANCED ================= */
+    let allPapers = []; // Store all papers for filtering
+    let papersVisible = false; // Track if papers are visible
+
+    // Toggle function for View My Papers button
+    function toggleMyPapers() {
+      const box = document.getElementById("myPapers");
+
+      if (papersVisible) {
+        // Hide papers
+        box.innerHTML = "";
+        papersVisible = false;
+      } else {
+        // Load and show papers
+        papersVisible = true; // Set to true BEFORE calling load or apply
+        if (allPapers.length > 0) {
+          applyFilters(); // Already have data, just filter and show
+        } else {
+          loadMyPapers(); // Fetch and show
+        }
+      }
+    }
+
+    async function loadMyPapers() {
+      try {
+        const res = await fetch("/paper/mine", { headers: { "Authorization": "Bearer " + token } });
+        if (!res.ok) throw new Error("Failed to fetch papers");
+
+        allPapers = await res.json();
+        if (!Array.isArray(allPapers)) allPapers = [];
+
+        // Update profile name
+        if (role === 'student' && username) {
+          document.getElementById("studentProfileName").innerText = `Welcome, ${username}!`;
+        }
+
+        // Calculate and update statistics
+        updateStatistics(allPapers);
+
+        // Apply filters and display (only if visibility is toggled on)
+        if (papersVisible) {
+          applyFilters();
+        }
+      } catch (err) {
+        console.error("Load Papers Error:", err);
+      }
+    }
+
+    function updateStatistics(papers) {
+      if (!Array.isArray(papers)) papers = [];
+
+      const total = papers.length;
+      const accepted = papers.filter(p => p.status === 'Accepted').length;
+      const pending = papers.filter(p => p.status === 'Pending' || !p.status).length;
+      const rejected = papers.filter(p => p.status === 'Rejected').length;
+
+      document.getElementById('statTotal').innerText = total;
+      document.getElementById('statAccepted').innerText = accepted;
+      document.getElementById('statPending').innerText = pending;
+      document.getElementById('statRejected').innerText = rejected;
+    }
+
+    function applyFilters() {
+      try {
+        const box = document.getElementById("myPapers");
+        if (!papersVisible || !box) return;
+
+        const searchTerm = (document.getElementById("searchPapers")?.value || "").toLowerCase().trim();
+        const statusFilter = document.getElementById("filterStatus")?.value || 'all';
+        const dateFilter = document.getElementById("filterDate")?.value || 'all';
+        const sortOption = document.getElementById("sortPapers")?.value || 'newest';
+
+        // Filter papers
+        const filtered = allPapers.filter(p => {
+          if (!p) return false;
+
+          // Search criteria: Title, Content, and Review Comments
+          // We only search 'content' if it's not the placeholder "SECURE_UPLOAD"
+          const displayContent = (p.content && p.content !== "SECURE_UPLOAD") ? String(p.content).toLowerCase() : "";
+          const displayTitle = (p.title || "").toLowerCase();
+
+          const matchesSearch = !searchTerm ||
+            displayTitle.includes(searchTerm) ||
+            displayContent.includes(searchTerm) ||
+            (Array.isArray(p.reviews) && p.reviews.some(r => r && r.comment && String(r.comment).toLowerCase().includes(searchTerm)));
+
+          // Status criteria
+          const matchesStatus = statusFilter === 'all' ||
+            p.status === statusFilter ||
+            (!p.status && statusFilter === 'Pending');
+
+          // Date criteria
+          const matchesDate = filterByDate(p.createdAt, dateFilter);
+
+          return matchesSearch && matchesStatus && matchesDate;
+        });
+
+        // Sort results
+        const sorted = sortPapers(filtered, sortOption);
+
+        // Update UI
+        updateActiveFilters(searchTerm, statusFilter, dateFilter, sortOption);
+        displayPapers(sorted, box);
+      } catch (err) {
+        console.error("Filter Error:", err);
+      }
+    }
+
+    function filterByDate(dateVal, filter) {
+      if (!filter || filter === 'all') return true;
+      if (!dateVal) return true;
+
+      const pDate = new Date(dateVal);
+      if (isNaN(pDate.getTime())) return true;
+
+      const now = new Date();
+      // Reset hours to compare calendar days
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const paperTime = new Date(pDate.getFullYear(), pDate.getMonth(), pDate.getDate()).getTime();
+
+      const oneDay = 24 * 60 * 60 * 1000;
+
+      switch (filter) {
+        case 'today':
+          return paperTime === today;
+        case 'week':
+          return (today - paperTime) <= (7 * oneDay);
+        case 'month':
+          return (today - paperTime) <= (30 * oneDay);
+        default:
+          return true;
+      }
+    }
+
+    function sortPapers(papers, sortOption) {
+      const sorted = [...papers];
+
+      switch (sortOption) {
+        case 'newest':
+          return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        case 'oldest':
+          return sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        case 'title-asc':
+          return sorted.sort((a, b) => a.title.localeCompare(b.title));
+        case 'title-desc':
+          return sorted.sort((a, b) => b.title.localeCompare(a.title));
+        case 'status':
+          const statusOrder = { 'Accepted': 1, 'Pending': 2, 'Rejected': 3 };
+          return sorted.sort((a, b) => {
+            const aStatus = statusOrder[a.status] || 2;
+            const bStatus = statusOrder[b.status] || 2;
+            return aStatus - bStatus;
+          });
+        default:
+          return sorted;
+      }
+    }
+
+    function updateActiveFilters(search, status, date, sort) {
+      const container = document.getElementById('activeFilters');
+      container.innerHTML = '';
+
+      const filters = [];
+      if (search) filters.push({ label: `Search: "${search}"`, type: 'search' });
+      if (status !== 'all') filters.push({ label: `Status: ${status}`, type: 'status' });
+      if (date !== 'all') {
+        const dateLabels = { today: 'Today', week: 'Last 7 Days', month: 'Last 30 Days' };
+        filters.push({ label: `Date: ${dateLabels[date]}`, type: 'date' });
+      }
+
+      filters.forEach(f => {
+        container.innerHTML += `
+          <div class="filter-badge">
+            ${f.label}
+            <span class="remove-filter" onclick="removeFilter('${f.type}')">✕</span>
+          </div>
+        `;
+      });
+    }
+
+    function removeFilter(type) {
+      switch (type) {
+        case 'search':
+          document.getElementById('searchPapers').value = '';
+          break;
+        case 'status':
+          document.getElementById('filterStatus').value = 'all';
+          break;
+        case 'date':
+          document.getElementById('filterDate').value = 'all';
+          break;
+      }
+      applyFilters();
+    }
+
+    function resetFilters() {
+      document.getElementById('searchPapers').value = '';
+      document.getElementById('filterStatus').value = 'all';
+      document.getElementById('filterDate').value = 'all';
+      document.getElementById('sortPapers').value = 'newest';
+      applyFilters();
+    }
+
+
+
+    function displayPapers(papers, box) {
+      if (!papersVisible) {
+        box.innerHTML = "";
+        return;
+      }
+
+      if (!Array.isArray(papers) || papers.length === 0) {
+        box.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <h4>No Papers Found</h4>
+            <p>Try adjusting your filters or upload a new research paper.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = "";
+      papers.forEach(p => {
+        let statusClass = "badge-pending";
+        let statusText = p.status || 'Pending';
+
+        if (p.status === "Accepted") {
+          statusClass = "badge-accepted";
+        } else if (p.status === "Rejected") {
+          statusClass = "badge-rejected";
+        }
+
+        let reviewsHtml = "";
+        if (p.reviews && p.reviews.length > 0) {
+          const r = p.reviews[0];
+          const reviewDate = r.date ? new Date(r.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+          reviewsHtml = `<div class="mt-3" style="background: rgba(255, 255, 255, 0.5); border-radius: 14px; border: 1px solid rgba(72, 52, 212, 0.1); overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Review Score</div>
+                    <div style="color: rgba(255,255,255,0.7); font-size: 0.6rem; font-weight: 600;">Reviewed on: ${reviewDate}</div>
+                  </div>
+                  <div style="color: #fff; font-size: 1.6rem; font-weight: 800;">${r.score}<span style="font-size: 0.9rem; opacity: 0.7;"> / 10</span></div>
+                </div>
+                <div style="padding: 15px 20px;">
+                  <div style="color: #6366f1; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">Feedback</div>
+                  <div style="color: #374151; font-size: 0.95rem; font-style: italic;">${r.comment ? `"${r.comment}"` : r.comment || 'No feedback provided'}</div>
+                </div>
+           </div>`;
+        }
+
+        const uploadDate = p.createdAt ? new Date(p.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+
+        html += `
+      <div class="glass-card p-4 paper-card-enhanced" style="display: flex; flex-direction: column; gap: 15px;">
+        <div class="d-flex justify-between align-start">
+           <div>
+             <h5 class="text-primary m-0" style="font-size: 1.25rem; font-weight: 800; line-height: 1.3;">${p.title}</h5>
+             <small class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Uploaded on: ${uploadDate}</small>
+           </div>
+           <span class="badge-premium ${statusClass}">${statusText}</span>
+        </div>
+        ${p.filename ? `
+        <div style="margin-top: 10px;">
+          <a href="/uploads/${encodeURIComponent(p.filename)}" target="_blank" class="pdf-link-premium" style="color: #ef4444;">
+            <span class="pdf-badge" style="background: #ef4444;">PDF</span>
+            <strong style="color: #ef4444;">View Document</strong>
+          </a>
+        </div>` : ''}
+        <div style="background: rgba(99, 102, 241, 0.03); padding: 12px; border-radius: 10px; border: 1px dashed rgba(99, 102, 241, 0.2);">
+          <small style="color: #6366f1; font-weight: 700; font-size: 0.6rem; text-transform: uppercase;">Integrity Hash</small>
+          <div style="color: #636e72; font-size: 0.75rem; font-family: monospace; word-break: break-all;">${p.hash}</div>
+        </div>
+        ${reviewsHtml}
+      </div>`;
+      });
+      box.innerHTML = html;
+    }
+
+    /* ================= REVIEWER ================= */
+    let allReviewerPapers = [];
+    let reviewerPapersVisible = false;
+    async function updateReviewerDashboard() {
+      try {
+        const res = await fetch("/paper/view", { headers: { "Authorization": "Bearer " + token } });
+        allReviewerPapers = await res.json();
+
+        const total = allReviewerPapers.length;
+        const done = allReviewerPapers.filter(p => p.reviews && p.reviews.some(r => r.reviewer === username)).length;
+        const pending = total - done;
+
+        document.getElementById('statReviewTotal').innerText = total;
+        document.getElementById('statReviewDone').innerText = done;
+        document.getElementById('statReviewPending').innerText = pending;
+
+        applyReviewerFilters();
+      } catch (e) { console.error("Reviewer stats error:", e); }
+    }
+
+    function resetReviewerFilters() {
+      document.getElementById("searchReviewerPapers").value = "";
+      document.getElementById("filterReviewerStatus").value = "all";
+      document.getElementById("sortReviewerPapers").value = "newest";
+      applyReviewerFilters();
+    }
+
+    function applyReviewerFilters() {
+      const box = document.getElementById("reviewer-papers-grid");
+      if (!reviewerPapersVisible) {
+        box.innerHTML = "";
+        return;
+      }
+      const searchTerm = document.getElementById("searchReviewerPapers").value.toLowerCase();
+      const statusFilter = document.getElementById("filterReviewerStatus").value;
+      const sortOption = document.getElementById("sortReviewerPapers").value;
+
+      let filtered = allReviewerPapers.filter(p => {
+        const matchesSearch = !searchTerm ||
+          (p.title || "").toLowerCase().includes(searchTerm) ||
+          (p.owner || "").toLowerCase().includes(searchTerm) ||
+          (p.content || "").toLowerCase().includes(searchTerm);
+
+        const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      if (sortOption === 'title-asc') {
+        filtered.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      } else {
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+
+      displayReviewerPapers(filtered, box);
+    }
+
+    async function viewReviewerPapers(forceShow = false) {
+      const box = document.getElementById("reviewer-papers-grid");
+      if (!forceShow && reviewerPapersVisible) {
+        box.innerHTML = "";
+        reviewerPapersVisible = false;
+      } else {
+        reviewerPapersVisible = true;
+        await updateReviewerDashboard();
+      }
+    }
+
+    function displayReviewerPapers(papers, box) {
+      box.innerHTML = "";
+      if (!Array.isArray(papers) || papers.length === 0) {
+        box.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <h4>No Papers Found</h4>
+            <p>Try adjusting your search or filters.</p>
+          </div>
+        `;
+        return;
+      }
+
+      papers.forEach(p => {
+        let statusClass = "badge-pending";
+        let statusText = p.status || 'Pending';
+
+        if (p.status === "Accepted") {
+          statusClass = "badge-accepted";
+        } else if (p.status === "Rejected") {
+          statusClass = "badge-rejected";
+        }
+
+        const myReview = p.reviews && p.reviews.find(r => r.reviewer === username);
+        const safeTitle = (p.title || "").replace(/'/g, "\\'");
+
+        const actionBtn = myReview ?
+          `<button class="btn btn-graded-done btn-sm" disabled style="width:100%; min-height: 50px; font-weight: 800; border-radius: 12px;">✅ Already Graded</button>` :
+          `<button class="btn btn-grade btn-sm" style="width:100%; min-height: 50px; font-weight: 800; border-radius: 12px;" onclick="openReviewModal('${p._id}', '${safeTitle}')">📝 Grade Paper</button>`;
+
+        const uploadDate = p.createdAt ? new Date(p.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+
+        let verifyBtnHtml = `<button class="btn btn-verify btn-sm" style="flex: 1; max-width: 250px; min-height: 50px; font-weight: 800; border-radius: 12px; font-size: 0.95rem;" onclick="verifyPaper('${p._id}', this)">Verify Integrity</button>`;
+        if (p.integrityStatus === "VALID") {
+          verifyBtnHtml = `<button class="btn btn-verified-done btn-sm" style="flex: 1; max-width: 250px; min-height: 50px; font-weight: 800; border-radius: 12px; font-size: 0.95rem;" onclick="verifyPaper('${p._id}', this)">✅ Verified</button>`;
+        } else if (p.integrityStatus === "TAMPERED") {
+          verifyBtnHtml = `<button class="btn btn-danger btn-sm" style="flex: 1; max-width: 250px; min-height: 50px; font-weight: 800; border-radius: 12px; font-size: 0.95rem;" onclick="verifyPaper('${p._id}', this)">❌ TAMPERED!</button>`;
+        }
+
+        box.innerHTML += `
+      <div class="glass-card p-4 paper-card-enhanced" style="display: flex; flex-direction: column; gap: 15px;">
+        <div class="d-flex justify-between align-start">
+           <div>
+             <h5 class="text-primary m-0" style="font-size: 1.25rem; font-weight: 800; line-height: 1.3;">${p.title}</h5>
+             <small class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Uploaded on: ${uploadDate}</small>
+             <small class="text-muted" style="font-size: 0.75rem; font-weight: 600; display: block; margin-top: 2px;">Owner: <strong class="text-primary">${p.owner}</strong></small>
+           </div>
+           <span class="badge-premium ${statusClass}">${statusText}</span>
+        </div>
+        
+        <div style="background: rgba(0, 184, 148, 0.04); padding: 15px; border-radius: 12px; border-left: 4px solid var(--accent); word-break: break-word;">
+            <small class="text-accent" style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase;">Abstract</small>
+            <p class="m-0" style="font-size:1rem; line-height:1.5; margin-top:5px; color: #2d3436;">${p.content || "No abstract provided."}</p>
+        </div>
+
+        <div style="background: rgba(99, 102, 241, 0.03); padding: 12px; border-radius: 10px; border: 1px dashed rgba(99, 102, 241, 0.2);">
+          <small style="color: #6366f1; font-weight: 700; font-size: 0.6rem; text-transform: uppercase;">Integrity Hash</small>
+          <div style="color: #636e72; font-size: 0.75rem; font-family: monospace; word-break: break-all;">${p.hash}</div>
+        </div>
+
+        ${p.filename ? `
+        <div style="margin-top: 10px;">
+            <div style="margin-top: 12px;">
+              <a href="/uploads/${encodeURIComponent(p.filename)}" target="_blank" class="pdf-link-premium" style="color: #ef4444;">
+                <span class="pdf-badge" style="background: #ef4444;">PDF</span>
+                <strong style="color: #ef4444;">View Document</strong>
+              </a>
+            </div>
+        </div>` : ''}
+
+        <div class="d-flex justify-center" style="gap:15px; margin-top: 5px; width: 100%;">
+           ${verifyBtnHtml}
+           <div style="flex: 1; max-width: 250px;">${actionBtn}</div>
+        </div>
+      </div>`;
+      });
+    }
+
+    /* ================= REVIEW LOGIC ================= */
+    let currentPaperId = null;
+    function openReviewModal(id, title) {
+      currentPaperId = id;
+      document.getElementById("reviewModalTitle").innerText = "Grading: " + title;
+      document.getElementById("reviewModal").classList.remove("d-none");
+    }
+
+    async function submitReview(decision) {
+      try {
+        const score = document.getElementById("reviewScore").value;
+        const comment = document.getElementById("reviewComment").value;
+        const res = await fetch(`/paper/review/${currentPaperId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ score, comment, status: decision })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        alert(data.message);
+        document.getElementById("reviewScore").value = "8";
+        document.getElementById("reviewComment").value = "";
+        document.getElementById("reviewModal").classList.add("d-none");
+        viewReviewerPapers(true);
+      } catch (e) { alert("Error: " + e.message); }
+    }
+
+    async function verifyPaper(id, btnElement) {
+      try {
+        const res = await fetch(`/paper/verify/${id}`, { headers: { "Authorization": "Bearer " + token } });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        if (data.integrity === "VALID") {
+          btnElement.innerText = "✅ Verified";
+          btnElement.className = "btn btn-verified-done btn-sm";
+          btnElement.style.flex = "1";
+          btnElement.style.maxWidth = "250px";
+          btnElement.style.minHeight = "50px";
+          btnElement.style.fontWeight = "800";
+          btnElement.style.borderRadius = "12px";
+          btnElement.style.fontSize = "0.95rem";
+          alert(`✅ Success: Paper "${data.title}" integrity is VALID.`);
+        } else {
+          btnElement.innerText = "❌ TAMPERED!";
+          btnElement.className = "btn btn-danger btn-sm";
+          btnElement.style.flex = "1";
+          btnElement.style.maxWidth = "250px";
+          btnElement.style.minHeight = "50px";
+          btnElement.style.fontWeight = "800";
+          btnElement.style.borderRadius = "12px";
+          btnElement.style.fontSize = "0.95rem";
+          alert(`⚠️ WARNING: Paper "${data.title}" has been TAMPERED with! The Digital Signature (Hash) does not match.`);
+        }
+      } catch (e) { alert("Verify Error: " + e.message); }
+    }
+
+    /* ================= ADMIN ================= */
+    let allAdminPapers = [];
+
+    async function updateAdminDashboard() {
+      try {
+        const res = await fetch("/paper/view", { headers: { "Authorization": "Bearer " + token } });
+        allAdminPapers = await res.json();
+
+        const total = allAdminPapers.length;
+        const accepted = allAdminPapers.filter(p => p.status === 'Accepted').length;
+        const pending = allAdminPapers.filter(p => !p.status || p.status === 'Pending').length;
+        const rejected = allAdminPapers.filter(p => p.status === 'Rejected').length;
+
+        // Fetch deleted count
+        const binRes = await fetch("/paper/bin", { headers: { "Authorization": "Bearer " + token } });
+        const deletedPapers = await binRes.json();
+        const deleted = deletedPapers.length;
+
+        document.getElementById('statAdminTotal').innerText = total;
+        document.getElementById('statAdminAccepted').innerText = accepted;
+        document.getElementById('statAdminPending').innerText = pending;
+        document.getElementById('statAdminRejected').innerText = rejected;
+        document.getElementById('statAdminDeleted').innerText = deleted;
+      } catch (e) { console.error("Admin stats error:", e); }
+    }
+
+    function resetAdminFilters() {
+      document.getElementById("searchAdminPapers").value = "";
+      document.getElementById("filterAdminStatus").value = "all";
+      document.getElementById("sortAdminPapers").value = "newest";
+      applyAdminFilters();
+    }
+
+    function applyAdminFilters() {
+      const box = document.getElementById("adminPapers");
+      if (box.children.length === 0) return;
+
+      const searchTerm = document.getElementById("searchAdminPapers").value.toLowerCase();
+      const statusFilter = document.getElementById("filterAdminStatus").value;
+      const sortOption = document.getElementById("sortAdminPapers").value;
+
+      let filtered = allAdminPapers.filter(p => {
+        const matchesSearch = !searchTerm ||
+          (p.title || "").toLowerCase().includes(searchTerm) ||
+          (p.owner || "").toLowerCase().includes(searchTerm) ||
+          (p.content || "").toLowerCase().includes(searchTerm);
+
+        const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      if (sortOption === 'title-asc') {
+        filtered.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      } else {
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+
+      // Re-render filtered papers
+      box.innerHTML = "";
+      filtered.forEach(p => {
+        // Use the same rendering logic from viewAdminPapers
+        renderAdminPaper(p, box);
+      });
+
+      // Update active filters display
+      const filtersContainer = document.getElementById('activeAdminFilters');
+      filtersContainer.innerHTML = '';
+      if (searchTerm) {
+        filtersContainer.innerHTML += `<div class="filter-badge">Search: "${searchTerm}" <span class="remove-filter" onclick="document.getElementById('searchAdminPapers').value=''; applyAdminFilters();">✕</span></div>`;
+      }
+      if (statusFilter !== 'all') {
+        filtersContainer.innerHTML += `<div class="filter-badge">Status: ${statusFilter} <span class="remove-filter" onclick="document.getElementById('filterAdminStatus').value='all'; applyAdminFilters();">✕</span></div>`;
+      }
+    }
+
+    function renderAdminPaper(p, box) {
+      let statusText = p.status || 'Pending';
+      let statusStyle = "";
+
+      if (p.status === "Accepted") {
+        statusStyle = "background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);";  // GREEN
+      } else if (p.status === "Rejected") {
+        statusStyle = "background: linear-gradient(135deg, #ef4444, #dc2626); color: white; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);";
+      } else {
+        statusStyle = "background: linear-gradient(135deg, #f59e0b, #d97706); color: white; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);";
+      }
+
+      const uploadDate = p.createdAt ? new Date(p.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+      const btnStyle = "padding: 10px 10px; font-size: 0.85rem; font-weight: 700; border-radius: 10px; border: none; flex: 1; display: flex; align-items: center; justify-content: center; height: 45px;";
+
+      let verifyBtnHtml = `<button class="btn btn-verify btn-sm" style="${btnStyle} background: linear-gradient(135deg, #0ea5e9, #0284c7);" onclick="verifyPaper('${p._id}', this)">Verify Integrity</button>`;
+      if (p.integrityStatus === "VALID") {
+        verifyBtnHtml = `<button class="btn btn-verified-done btn-sm" style="${btnStyle}" onclick="verifyPaper('${p._id}', this)">✅ Verified</button>`;
+      } else if (p.integrityStatus === "TAMPERED") {
+        verifyBtnHtml = `<button class="btn btn-danger btn-sm" style="${btnStyle}" onclick="verifyPaper('${p._id}', this)">❌ TAMPERED!</button>`;
+      }
+
+      box.innerHTML += `
+      <div class="glass-card p-4" style="display: flex; flex-direction: column; gap: 15px;">
+        <div>
+            <h5 class="text-primary m-0" style="font-size: 1.5rem; font-weight: 800; line-height: 1.2;">${p.title}</h5>
+            <small class="text-muted" style="font-size: 0.75rem; display: block;">Uploaded on: ${uploadDate}</small>
+            <div style="margin-top: 4px; color: #636e72; font-size: 0.9rem; font-weight: 600;">
+              Owner: <span class="text-accent">${p.owner}</span>
+            </div>
+        </div>
+
+        <div style="background: rgba(0, 184, 148, 0.04); padding: 15px; border-radius: 12px; border-left: 5px solid var(--accent); word-break: break-word;">
+            <small class="text-accent" style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase;">Abstract</small>
+            <p class="m-0" style="font-size:1.05rem; line-height:1.5; margin-top:5px;">${p.content || "No abstract provided."}</p>
+        </div>
+
+        ${(p.secureMessage || p.encryptedMessage) ? `
+        <div style="background: rgba(108, 92, 231, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(108, 92, 231, 0.2); margin-top: 5px;">
+           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; justify-content: space-between;">
+             <div style="display: flex; align-items: center; gap: 8px;">
+               <span style="font-size: 1rem;">🔒</span>
+               <small class="text-primary" style="font-weight: 800; font-size: 0.7rem; text-transform: uppercase;">Secure Message</small>
+             </div>
+             ${p.encryptedSymKey ? `<button class="btn btn-sm" style="font-size: 0.65rem; padding: 4px 8px; background: var(--accent); color: white; border-radius: 6px; border: none; font-weight: 700; cursor: pointer;" onclick="decryptMessage(this, '${p._id}', '${p.encryptedMessage}', '${p.encryptedSymKey}')">Unlock</button>` : ''}
+           </div>
+           <div id="msg-${p._id}" style="color: #4834d4; font-size: 0.95rem; font-weight: 600; font-style: italic; word-break: break-all;">
+             ${p.encryptedSymKey ? "[Message Encrypted]" : `"${p.secureMessage}"`}
+           </div>
+        </div>` : ''}
+
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; color: #475569; word-break: break-all;">
+          <span style="font-weight: 700;">SHA-256:</span> ${p.hash}
+          ${p.filename ? `
+          <div style="margin-top: 8px;">
+            <a href="/uploads/${encodeURIComponent(p.filename)}" target="_blank" class="pdf-link-premium">
+              <span class="pdf-badge">PDF</span>
+              <strong>View Document</strong>
+            </a>
+          </div>` : ''}
+        </div>
+
+        <div style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px; align-items: center; width: 100%;">
+             ${verifyBtnHtml}
+             
+             <button disabled style="${btnStyle} ${statusStyle} opacity: 1; cursor: default;">
+                ${statusText}
+             </button>
+
+             <button class="btn btn-delete" style="${btnStyle} box-shadow: 0 4px 10px rgba(214, 48, 49, 0.2);" onclick="deletePaper('${p._id}')">
+                Delete
+             </button>
+        </div>
+
+      </div>`;
+    }
+
+    async function viewAdminPapers(forceShow = false) {
+      const box = document.getElementById("adminPapers");
+
+      if (!forceShow && box.children.length > 0) {
+        box.innerHTML = "";
+        return;
+      }
+
+      const res = await fetch("/paper/view", { headers: { "Authorization": "Bearer " + token } });
+      const papers = await res.json();
+      allAdminPapers = papers;
+      box.innerHTML = "";
+
+      papers.forEach(p => renderAdminPaper(p, box));
+    }
+
+    async function updateStatus(id, status) {
+      if (!confirm(`Mark this paper as ${status}?`)) return;
+      try {
+        const res = await fetch(`/paper/status/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        viewAdminPapers(true);
+      } catch (e) { alert("Error: " + e.message); }
+    }
+
+    async function deletePaper(id) {
+      if (!confirm("Move this paper to bin?")) return;
+      await fetch(`/paper/${id}`, { method: "DELETE", headers: { "Authorization": "Bearer " + token } });
+      updateAdminDashboard(); // Refresh stats
+      viewAdminPapers(true);
+    }
+
+    async function viewBin() {
+      const adminBox = document.getElementById("adminPapers");
+      const binBox = document.getElementById("binPapers");
+
+      // Hide admin papers, show bin
+      adminBox.style.display = "none";
+      binBox.style.display = "grid";
+
+      const res = await fetch("/paper/bin", { headers: { "Authorization": "Bearer " + token } });
+      const papers = await res.json();
+      binBox.innerHTML = "";
+
+      if (!papers || papers.length === 0) {
+        binBox.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+          <div style="font-size: 4rem; opacity: 0.3;">🗑️</div>
+          <h3 style="color: var(--text-muted); margin-top: 20px;">Bin is Empty</h3>
+          <p style="color: var(--text-muted);">Deleted papers will appear here</p>
+          <button class="btn btn-primary" onclick="viewAdminPapers(true); document.getElementById('binPapers').style.display='none'; document.getElementById('adminPapers').style.display='grid';">← Back to Papers</button>
+        </div>`;
+        return;
+      }
+
+      papers.forEach(p => renderBinPaper(p, binBox));
+    }
+
+    function renderBinPaper(p, box) {
+      const deletedDate = p.deletedAt ? new Date(p.deletedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Unknown';
+      const uploadDate = p.createdAt ? new Date(p.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+
+      box.innerHTML += `
+      <div class="glass-card p-4" style="display: flex; flex-direction: column; gap: 15px; opacity: 0.7;">
+        <div>
+            <h5 class="text-primary m-0" style="font-size: 1.3rem; font-weight: 800; line-height: 1.2;">${p.title}</h5>
+            <small class="text-muted" style="font-size: 0.7rem; display: block;">Uploaded: ${uploadDate}</small>
+            <small style="color: #6b7280; font-size: 0.7rem; display: block;">🗑️ Deleted: ${deletedDate}</small>
+            <div style="margin-top: 4px; color: #636e72; font-size: 0.9rem; font-weight: 600;">
+              Owner: <span class="text-accent">${p.owner}</span>
+            </div>
+        </div>
+
+        <div style="background: rgba(0, 0, 0, 0.02); padding: 12px; border-radius: 8px; border-left: 3px solid #6b7280;">
+            <small style="font-weight: 700; font-size: 0.7rem; text-transform: uppercase; color: #6b7280;">Abstract</small>
+            <p class="m-0" style="font-size:0.95rem; line-height:1.5; margin-top:5px; color: #6b7280;">${p.content || "No abstract provided."}</p>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-success" style="flex: 1; padding: 12px; font-weight: 800;" onclick="restorePaper('${p._id}')">
+            ♻️ Restore
+          </button>
+          <button class="btn" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #6b7280, #9ca3af); color: white; font-weight: 800;" onclick="viewAdminPapers(true); document.getElementById('binPapers').style.display='none'; document.getElementById('adminPapers').style.display='grid';">
+            ← Back
+          </button>
+        </div>
+      </div>`;
+    }
+
+    async function restorePaper(id) {
+      if (!confirm("Restore this paper?")) return;
+      const res = await fetch(`/paper/restore/${id}`, {
+        method: "PUT",
+        headers: { "Authorization": "Bearer " + token }
+      });
+      if (res.ok) {
+        alert("Paper restored successfully!");
+        updateAdminDashboard(); // Refresh stats
+        viewBin(); // Refresh bin view
+      } else {
+        alert("Failed to restore paper");
+      }
+    }
+  </script>
+</body>
+
+</html>

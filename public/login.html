@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Login - Secure Research Portal</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="fade-in">
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <form class="glass-card auth-wrapper" onsubmit="login(event)" autocomplete="off">
+    <h2 class="text-center text-primary mb-2">Welcome Back</h2>
+    <p class="text-center text-muted mb-4">Login to Secure Research Portal</p>
+
+    <!-- Username -->
+    <div class="form-group">
+      <label>Username</label>
+      <input id="username" name="username" class="input-control" placeholder="Enter your username" autocomplete="off">
+    </div>
+
+    <!-- Password -->
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-group">
+        <input id="password" name="password" type="password" class="input-control" placeholder="Enter your password"
+          autocomplete="new-password">
+        <button class="input-icon-btn" type="button" onclick="togglePassword()" title="Show / Hide Password">
+          👁️
+        </button>
+      </div>
+    </div>
+
+    <!-- Login Button -->
+    <button type="submit" class="btn btn-primary w-100 mt-2">
+      Login
+    </button>
+
+    <!-- Forgot Password -->
+    <p class="text-center mt-3 small-text">
+      <a href="forgot.html" class="text-accent">Forgot password?</a>
+    </p>
+
+    <!-- Message -->
+    <div id="msg" class="alert text-center"></div>
+
+    <!-- Signup Link -->
+    <p class="text-center mt-3 small-text">
+      New user?
+      <a href="signup.html" class="text-primary">Create account</a>
+    </p>
+  </form>
+
+  <script>
+    /* ================= PREVENT BACK NAVIGATION & CACHING ================= */
+    (function () {
+      window.history.forward();
+      function noBack() {
+        window.history.forward();
+      }
+      window.onload = noBack;
+      window.onpageshow = function (evt) { if (evt.persisted) noBack(); };
+      window.onunload = function () { void (0); };
+    })();
+
+    // ================= SHOW / HIDE PASSWORD =================
+    function togglePassword() {
+      const pwd = document.getElementById("password");
+      pwd.type = pwd.type === "password" ? "text" : "password";
+    }
+
+    // ================= LOGIN =================
+    async function login(event) {
+      event.preventDefault(); // Prevent form submission
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        document.getElementById("msg").innerText = data.message;
+        return;
+      }
+
+      /*  MFA CHECK (ADDED) */
+      if (data.mfaRequired) {
+        localStorage.setItem("mfaUser", username);
+        window.location.replace("security.html");
+        return;
+      }
+
+      /* NORMAL LOGIN (UNCHANGED) */
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("username", data.username);
+      localStorage.setItem("role", data.role);
+
+      window.location.replace("dashboard.html");
+    }
+  </script>
+
+</body>
+
+</html>

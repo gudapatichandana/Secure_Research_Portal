@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up - Secure Research Portal</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="fade-in">
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <form class="glass-card auth-wrapper" style="max-width: 500px;" onsubmit="register(event)">
+    <h2 class="text-center text-gradient-primary mb-2">Create Account</h2>
+    <p class="text-center text-muted mb-4">Join the Secure Research Portal</p>
+
+    <!-- Full Name -->
+    <div class="form-group">
+      <label>Full Name</label>
+      <input id="fullname" name="fullname" class="input-control" placeholder="John Doe">
+    </div>
+
+    <!-- Email -->
+    <div class="form-group">
+      <label>Email Address</label>
+      <input id="email" name="email" type="email" class="input-control" placeholder="user@gmail.com">
+    </div>
+
+    <!-- Phone -->
+    <div class="form-group">
+      <label>Phone Number</label>
+      <input id="phone" name="phone" type="tel" class="input-control" placeholder="1234567890">
+    </div>
+
+    <!-- Username -->
+    <div class="form-group">
+      <label>Username</label>
+      <input id="username" name="username" class="input-control" placeholder="Choose a username">
+    </div>
+
+    <!-- Password -->
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-group">
+        <input id="password" name="password" type="password" class="input-control" placeholder="Create a password">
+        <button class="input-icon-btn" type="button" onclick="togglePassword()">👁️</button>
+      </div>
+    </div>
+
+    <!-- Role -->
+    <div class="form-group">
+      <label>Select Role</label>
+      <select id="role" name="role" class="input-control" style="background-color: rgba(0,0,0,0.5);">
+        <option value="" disabled selected>Choose your role...</option>
+        <option value="student">Student</option>
+        <option value="reviewer">Reviewer</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+
+    <!-- Security Question -->
+    <div class="form-group">
+      <label>Security Question</label>
+      <input id="securityQuestion" name="securityQuestion" class="input-control"
+        placeholder="e.g., What is your favorite color?">
+    </div>
+
+    <!-- Security Answer -->
+    <div class="form-group">
+      <label>Security Answer</label>
+      <div class="input-group">
+        <input id="securityAnswer" name="securityAnswer" type="password" class="input-control"
+          placeholder="Enter your answer">
+        <button class="input-icon-btn" type="button" onclick="toggle('securityAnswer')">👁</button>
+      </div>
+    </div>
+
+    <!-- Register Button -->
+    <button type="submit" class="btn btn-success w-100 mt-2">Create Account</button>
+
+    <!-- Message -->
+    <div id="msg" class="alert text-center"></div>
+
+    <p class="text-center mt-3 small-text">
+      Already have an account?
+      <a href="login.html" class="text-primary">Login</a>
+    </p>
+  </form>
+
+  <script>
+    function togglePassword() {
+      const pwd = document.getElementById("password");
+      pwd.type = pwd.type === "password" ? "text" : "password";
+    }
+
+    function toggle(id) {
+      const field = document.getElementById(id);
+      field.type = field.type === "password" ? "text" : "password";
+    }
+
+    // Password validation
+    function validatePassword(password, username, phone, fullname) {
+      if (password.length < 8) return "Password must be at least 8 characters";
+      if (!/[A-Z]/.test(password)) return "Password must contain an uppercase letter";
+      if (!/[a-z]/.test(password)) return "Password must contain a lowercase letter";
+      if (!/[0-9]/.test(password)) return "Password must contain a number";
+      if (!/[@#$!%&*]/.test(password)) return "Password must contain a special character";
+      if (password.toLowerCase().includes(username.toLowerCase()))
+        return "Password should not contain username";
+      if (password.includes(phone))
+        return "Password should not contain phone number";
+      if (password.toLowerCase().includes(fullname.toLowerCase().split(" ")[0]))
+        return "Password should not contain name";
+      return null;
+    }
+
+    //  Security Question & Answer validation
+    function validateSecurityQA(question, answer, username, password) {
+      if (!question || question.length < 10)
+        return "Security question must be at least 10 characters";
+
+      if (!question.trim().endsWith("?"))
+        return "Security question must end with a question mark (?)";
+
+      if (!answer || answer.length < 3)
+        return "Security answer must be at least 3 characters";
+
+      if (answer.toLowerCase() === username.toLowerCase())
+        return "Security answer should not be same as username";
+
+      if (answer === password)
+        return "Security answer should not be same as password";
+
+      return null;
+    }
+
+    async function register(event) {
+      if (event) event.preventDefault();
+      const fullname = document.getElementById("fullname").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
+      const securityQuestion = document.getElementById("securityQuestion").value.trim();
+      const securityAnswer = document.getElementById("securityAnswer").value.trim();
+      const msg = document.getElementById("msg");
+
+      if (!fullname || !email || !phone || !username || !password || !role) {
+        msg.innerText = "All fields are required";
+        return;
+      }
+
+      const gmailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+      if (!gmailPattern.test(email)) {
+        msg.innerText = "Only @gmail.com email addresses are allowed";
+        return;
+      }
+
+      if (!/^\d{10}$/.test(phone)) {
+        msg.innerText = "Phone number must be exactly 10 digits";
+        return;
+      }
+
+      const pwdError = validatePassword(password, username, phone, fullname);
+      if (pwdError) {
+        msg.innerText = pwdError;
+        return;
+      }
+
+      const secError = validateSecurityQA(
+        securityQuestion,
+        securityAnswer,
+        username,
+        password
+      );
+      if (secError) {
+        msg.innerText = secError;
+        return;
+      }
+
+      try {
+        const res = await fetch("/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullname,
+            email,
+            phone,
+            username,
+            password,
+            role,
+            securityQuestion,
+            securityAnswer
+          })
+        });
+
+        const data = await res.json();
+        msg.innerText = data.message;
+
+        if (res.ok) {
+          localStorage.setItem("savedUsername", username);
+          setTimeout(() => window.location.href = "login.html", 1500);
+        }
+      } catch (err) {
+        msg.innerText = "Server error. Please try again.";
+      }
+    }
+  </script>
+
+</body>
+
+</html>

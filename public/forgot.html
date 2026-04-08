@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgot Password</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="fade-in">
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <form class="glass-card auth-wrapper" onsubmit="sendOTP(event)">
+
+    <h3 class="text-center text-primary mb-4">Forgot Password</h3>
+
+    <div class="form-group">
+      <label>Email Address</label>
+      <input id="email" name="email" class="input-control" placeholder="Enter registered Gmail" required>
+    </div>
+
+    <button type="submit" class="btn btn-warning w-100 mb-3">
+      Send OTP
+    </button>
+
+    <p class="text-center small-text">
+      <a href="login.html" class="text-accent">Back to Login</a>
+    </p>
+
+  </form>
+
+  <script>
+    async function sendOTP(event) {
+      if (event) event.preventDefault();
+      const email = document.getElementById("email").value;
+
+      if (!email) {
+        alert("Email required");
+        return;
+      }
+
+      const res = await fetch("/auth/send-reset-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: email })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message);
+        return;
+      }
+
+      alert("OTP sent to your email");
+      localStorage.setItem("resetEmail", email);
+      window.location.href = "reset.html";
+    }
+  </script>
+
+</body>
+
+</html>

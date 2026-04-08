@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Security Verification</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="fade-in">
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <form class="glass-card auth-wrapper" onsubmit="verify(event)">
+
+    <h4 class="mb-4 text-center text-primary">Security Verification</h4>
+
+    <p id="question" class="mb-3 text-center text-muted" style="font-size: 1.1rem;"></p>
+
+    <div class="form-group">
+      <input id="answer" name="security-answer" class="input-control" placeholder="Enter your answer"
+        autocomplete="off">
+    </div>
+
+    <button type="submit" class="btn btn-success w-100">Verify Login</button>
+
+    <div id="msg" class="alert text-center"></div>
+
+    <div id="retry-action" class="text-center mt-3" style="display: none;">
+      <button type="button" class="btn btn-outline-primary" onclick="location.replace('login.html')">
+        Back to Login
+      </button>
+    </div>
+  </form>
+
+  <script>
+    /* ================= PREVENT BACK NAVIGATION & CACHING ================= */
+    (function () {
+      window.history.forward();
+      function noBack() {
+        window.history.forward();
+      }
+      window.onload = noBack;
+      window.onpageshow = function (evt) { if (evt.persisted) noBack(); };
+      window.onunload = function () { void (0); };
+    })();
+
+    const username = localStorage.getItem("mfaUser");
+    if (!username) location.replace("login.html");
+
+    async function loadQuestion() {
+      const res = await fetch(`/auth/security-question/${username}`);
+      const data = await res.json();
+      document.getElementById("question").innerText = data.securityQuestion;
+    }
+
+    loadQuestion();
+
+    async function verify(event) {
+      event.preventDefault(); // Prevent form submission
+
+      const answer = document.getElementById("answer").value;
+
+      const res = await fetch("/auth/verify-security-answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, answer })
+      });
+
+      const data = await res.json();
+      document.getElementById("msg").innerText = data.message;
+
+      if (res.ok) {
+        localStorage.removeItem("mfaUser");
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("username", data.username);
+        localStorage.setItem("role", data.role);
+        window.location.replace("dashboard.html");
+      } else {
+        document.getElementById("retry-action").style.display = "block";
+      }
+    }
+  </script>
+</body>
+
+</html>

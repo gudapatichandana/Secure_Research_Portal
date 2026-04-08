@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OTP Verification</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="fade-in">
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <form class="glass-card auth-wrapper" onsubmit="verifyOTP(event)">
+
+    <h3 class="text-center text-primary mb-3">Verify OTP</h3>
+
+    <div class="form-group">
+      <label>Enter OTP</label>
+      <input id="otp" name="otp" class="input-control" placeholder="Enter OTP" required>
+    </div>
+
+    <button type="submit" class="btn btn-success w-100">
+      Verify OTP
+    </button>
+
+    <div id="msg" class="alert text-center"></div>
+
+  </form>
+
+  <script>
+    const email = localStorage.getItem("resetEmail");
+
+    if (!email) {
+      alert("Session expired");
+      window.location.href = "forgot.html";
+    }
+
+    async function verifyOTP(event) {
+      if (event) event.preventDefault();
+      const otp = document.getElementById("otp").value.trim();
+      const msg = document.getElementById("msg");
+
+      const res = await fetch("/auth/verify-reset-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: email, otp })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        msg.innerText = data.message;
+        return;
+      }
+
+      msg.innerText = "OTP verified";
+
+      setTimeout(() => {
+        window.location.href = "reset.html";
+      }, 1000);
+    }
+  </script>
+
+</body>
+
+</html>
