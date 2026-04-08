@@ -94,7 +94,7 @@ The application will begin actively listening for localized traffic at:
 This repository comes pre-engineered for serverless scaling utilizing Vercel's Edge network.
 
 1. Commit and push your local repository to GitHub.
-2. Navigate to the [Vercel Dashboard](https://vercel.com/dashboard) and provision a new project linked to your repository.
+2. Navigate to the Vercel Dashboard and provision a new project linked to your repository.
 3. Under **Settings > Environment Variables**, securely input your `MONGO_URI` (must be a publicly accessible cloud string like Atlas) and `JWT_SECRET`.
 4. Initiate the deployment pipeline. The native `vercel.json` and altered `server.js` export definitions will instruct Vercel's `@vercel/node` builder automatically.
 
