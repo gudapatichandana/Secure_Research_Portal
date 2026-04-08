@@ -8,9 +8,11 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const path = require("path");
+
 // SERVE FRONTEND FILES
-app.use(express.static("public"));
-app.use("/uploads", express.static("uploads"));
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Explicitly serve login page on root
 app.get("/", (req, res) => {
